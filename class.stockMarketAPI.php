@@ -52,19 +52,12 @@ class StockMarketAPI
 	private function _makeData($symbolList)
 	{
 		$stockDataArray = array();
-		$file = "http://download.finance.yahoo.com/d/quotes.csv?s=".implode(",", $symbolList)."&f=s0n0l1p2j1d2k0s6=.csv";
+		$file = "http://download.finance.yahoo.com/d/quotes.csv?s=".implode(",", $symbolList)."&f=snl1p2j1jks6j4ophgee7e8e9rr5yp6r6r7p5s7j2&e=.csv";
 		//echo $file . "\n";
 		if (($handle = fopen($file, "r")) !== FALSE) {
 		    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) 
 			{
-				//die(print_r($data));
-				$potential = 0;
-				if(floatval($data[2]) > 0)
-				{
-					$potential = floatval($data[6])/floatval($data[2]) * 100;
-				}
-				
-				
+				//die(print_r($data));				
 				
 				$marketNumber = substr($data[4], 0, -1);
 				$marketDollarUnit = substr($data[4], -1, 1);
@@ -107,26 +100,70 @@ class StockMarketAPI
 					$revenueIntegerVal= floatval($revenueNumber) * 1000;
 				}
 			
-				$earningRatio = 0;
-				if($marketIntegerVal != 0)
-				{ 
-					$earningRatio = $revenueIntegerVal/$marketIntegerVal;
+			
+				$EBITDANumber = substr($data[8], 0, -1);
+				$EBITDADollarUnit = substr($data[8], -1, 1);
+				$EBITDAIntegerVal = floatval($EBITDANumber);
+				if($EBITDADollarUnit == "T")
+				{
+					$revenueIntegerVal= floatval($EBITDANumber) * 1000000000000;
+				}
+				else if($EBITDADollarUnit == "B")
+				{
+					$EBITDAIntegerVal= floatval($EBITDANumber) * 1000000000;
+				}
+				else if($EBITDADollarUnit == "M")
+				{
+					$EBITDAIntegerVal= floatval($EBITDANumber) * 1000000;
+				}
+				else if($EBITDADollarUnit == "K")
+				{
+					$EBITDAIntegerVal= floatval($EBITDANumber) * 1000;
+				}
+				
+				$cleanData = array();
+				foreach($data as $item)
+				{
+					if($item == "N/A")
+					{
+						$cleanData[] = "0";
+					}
+					else
+					{
+						$cleanData[] = $item;
+					}
 				}
 				
 				$stockDataArray[] = array(
-											"symbol"	=> $data[0],
-											"name"		=> $data[1],
-											"price"		=> $data[2],
-											"change"	=> $data[3],
-											"marketCap"	=> $data[4],
-											"date"		=> $data[5],
-											"oneYearTop"=> $data[6],
-											"revenue"	=> $data[7],
-											"potential"	=> $potential, 
-											"earningRatio" => $earningRatio,
-											"marketIntegerVal" => $marketIntegerVal,
-											"revenueIntegerVal" => $revenueIntegerVal
-											
+							"symbol"							=> $cleanData[0],
+							"name"								=> $cleanData[1],
+							"price"								=> $cleanData[2],
+							"change"							=> $cleanData[3],
+							"marketCap"							=> $cleanData[4],
+							"oneYearLow"						=> $cleanData[5],
+							"oneYearHigh"						=> $cleanData[6],
+							"revenue"							=> $cleanData[7],
+							"EBITDA"							=> $cleanData[8],
+							"open"								=> $cleanData[9],
+							"previousClose"						=> $cleanData[10],
+							"dayHigh"							=> $cleanData[11],
+							"dayLow"							=> $cleanData[12],
+							"dilutedEPS" 						=> $cleanData[13],
+							"EPSEstimateCurrentYear"			=> $cleanData[14],
+							"EPSEstimateNextQuarter"			=> $cleanData[15],
+							"EPSEstimateNextYear"				=> $cleanData[16],
+							"PERatio"							=> $cleanData[17],
+							"PEGRatio"							=> $cleanData[18],
+							"PastAnnualDividendYieldInPercent"	=> $cleanData[19],
+							"PriceBook"							=> $cleanData[20],
+							"PriceEPSEstimateCurrentYear"		=> $cleanData[21],
+							"PriceEPSEstimateNextYear"			=> $cleanData[22],
+							"PriceSales" 						=> $cleanData[23],
+							"ShortRatio"						=> $cleanData[24],
+							"SharesOutstanding"					=> trim($cleanData[25]),
+							"marketCapInt" 						=> $marketIntegerVal,
+							"revenueInt" 						=> $revenueIntegerVal,
+							"EBITDAInt" 						=> $EBITDAIntegerVal
 										);	
 				
 		    }
@@ -144,19 +181,18 @@ class StockMarketAPI
 			{
 			  $this->connection = mysql_connect($this->dbhost, $this->dbuser, $this->dbpass);
 			}
-			if($stock["price"] != "N/A" && $stock["oneYearTop"] != "N/A")
-			{
-				mysql_select_db('stock');
 
-				$sql = 'INSERT INTO quote '.'VALUES ("'.$stock["symbol"].'","'.$stock["name"].'",'.$stock["price"].',"'.$stock["change"].'","'.$stock["marketCap"].'","'.$stock["revenue"].'", CURDATE(),'.$stock["oneYearTop"].','.$stock["potential"].','.$stock["earningRatio"].','.$stock["marketIntegerVal"].','.$stock["revenueIntegerVal"].')';
-				//echo $sql . "\n";
-				$retval = mysql_query( $sql, $this->connection );
-				if(! $retval )
-				{
-				  //echo 'Could not enter data: ' . mysql_error();
-				}
-				//echo "Entered data successfully\n";
+			mysql_select_db('stock');
+			
+			$sql = 'INSERT INTO quote '.'VALUES (CURDATE(), "'.$stock["symbol"].'","'.$stock["name"].'",'.$stock["price"].',"'.$stock["change"].'","'.$stock["marketCap"].'",'.$stock["marketCapInt"].','.$stock["oneYearLow"].','.$stock["oneYearHigh"].',"'.$stock["revenue"].'",'.$stock["revenueInt"].',"'.$stock["EBITDA"].'",'.$stock["EBITDAInt"].','.$stock["open"].','.$stock["previousClose"].','.$stock["dayHigh"].','.$stock["dayLow"].','.$stock["dilutedEPS"].','.$stock["EPSEstimateCurrentYear"].','.$stock["EPSEstimateNextQuarter"].','.$stock["EPSEstimateNextYear"].','.$stock["PERatio"].','.$stock["PEGRatio"].','.$stock["PastAnnualDividendYieldInPercent"].','.$stock["PriceBook"].','.$stock["PriceEPSEstimateCurrentYear"].','.$stock["PriceEPSEstimateNextYear"].','.$stock["PriceSales"].','.$stock["ShortRatio"].','.$stock["SharesOutstanding"].')';
+			
+			//echo $sql . "\n";
+			$retval = mysql_query( $sql, $this->connection );
+			if(! $retval )
+			{
+			  //echo 'Could not enter data: ' . mysql_error();
 			}
+			//echo "Entered data successfully\n";
 		}
 	}
 	private function _getPreviousDate()
@@ -181,27 +217,41 @@ class StockMarketAPI
 		  $this->connection = mysql_connect($this->dbhost, $this->dbuser, $this->dbpass);
 		}
 		mysql_select_db('stock');
-		
 		$sql = "";
-		
+		$locationFilter = "";
 		if($viewType == "CAN")
 		{
-			$sql = "select * from quote where SUBSTRING(symbol, -3) = '.TO' AND marketCapInt > 100000000 AND earningRatio > 2 AND potential > 200 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' group by symbol order by potential DESC";
+			$locationFilter = "SUBSTRING(symbol, -3) = '.TO'";
 		}
 		else if($viewType == "US")
 		{
-			$sql = "select * from quote where SUBSTRING(symbol, -3) != '.TO' AND marketCapInt > 100000000 AND earningRatio > 2 AND potential > 200 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' group by symbol order by potential DESC";
+			$locationFilter = "SUBSTRING(symbol, -3) != '.TO' ";
 		}
-		else
+		
+		$whereStatement = "(oneYearHigh/price) > 2 AND";
+		$sql = "select symbol, quote.name, price, quote.change, marketCap, TRUNCATE((oneYearHigh/price)*100, 2) as potential, TRUNCATE((EBITDAInt/marketCapInt)*100, 2) as earningRate, TRUNCATE(dilutedEPS/price * 100, 2) as EPSP, TRUNCATE((EPSEstimateNextYear/EPSEstimateCurrentYear) *100, 2) as EPSGrowthRate, PEGRatio, PERatio, PastAnnualDividendYieldInPercent as DividendPercentage, PriceBook from quote where " .$whereStatement. " marketCapInt > 500000000 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' ";
+		
+		if($locationFilter != "")
 		{
-			$sql = "select * from quote where marketCapInt > 100000000 AND earningRatio > 2 AND potential > 200 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' group by symbol order by potential DESC";
+			$sql = $sql . "AND " . $locationFilter; 
 		}
+		$sql = $sql . "group by symbol order by potential DESC";
+		
+		//echo $sql . "\n";
+		
 		$result = mysql_query( $sql, $this->connection );
+		if (!$result) {
+		    trigger_error('Invalid query: ' . mysql_error());
+		}
+		
 		$rank = 0;
-		$tableString = "<table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Revenue</td><td>Potential</td><td>EarningRatio</td></tr>";
+		//$tableString = "<table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential(HP/P)</td><td>EarningRate(E/M)</td><td>EPSP(EPS/P)</td><td>EPSGrowthRate</td><td>PEGRatio</td><td>PERatio</td><td>DividendPercentage</td><td>PriceBook</td></tr>";
+		$tableString = "<table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>EarningRate</td></tr>";
+		
 		while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
 			$rank+=1;
-		    $tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["revenue"].".</td><td>".$row["potential"]."%</td><td>".$row["earningRatio"]."</td></tr>";
+		    //$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["earningRate"]."%</td><td>".$row["EPSP"]."%</td><td>".$row["EPSGrowthRate"]."</td><td>".$row["PEGRatio"]."</td><td>".$row["PERatio"]."</td><td>".$row["DividendPercentage"]."%</td><td>".$row["PriceBook"]."</td></tr>";
+			$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["earningRate"]."%</td></tr>";
 		}
 		return $tableString . "</table>";
 		
