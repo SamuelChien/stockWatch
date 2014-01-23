@@ -228,14 +228,14 @@ class StockMarketAPI
 			$locationFilter = "SUBSTRING(symbol, -3) != '.TO' ";
 		}
 		
-		$whereStatement = "(oneYearHigh/price) > 2 AND";
-		$sql = "select symbol, quote.name, price, quote.change, marketCap, TRUNCATE((oneYearHigh/price)*100, 2) as potential, TRUNCATE((EBITDAInt/marketCapInt)*100, 2) as earningRate, TRUNCATE(dilutedEPS/price * 100, 2) as EPSP, TRUNCATE((EPSEstimateNextYear/EPSEstimateCurrentYear) *100, 2) as EPSGrowthRate, PEGRatio, PERatio, PastAnnualDividendYieldInPercent as DividendPercentage, PriceBook from quote where " .$whereStatement. " marketCapInt > 500000000 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' ";
+		$whereStatement = "(oneYearHigh/price) > 2 AND oneYearHigh/price > 3 AND";
+		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE((oneYearHigh/price)*100, 2) as potential, TRUNCATE((EBITDAInt/marketCapInt)*100, 2) as earningRate, TRUNCATE(dilutedEPS/price * 100, 2) as EPSP, TRUNCATE((EPSEstimateNextYear/EPSEstimateCurrentYear) *100, 2) as EPSGrowthRate, PEGRatio, PERatio, PastAnnualDividendYieldInPercent as DividendPercentage, PriceBook from quote where " .$whereStatement. " marketCapInt > 500000000 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' ";
 		
 		if($locationFilter != "")
 		{
 			$sql = $sql . "AND " . $locationFilter; 
 		}
-		$sql = $sql . "group by symbol order by potential DESC";
+		$sql = $sql . "group by symbol order by potential DESC, earningRate DESC";
 		
 		//echo $sql . "\n";
 		
@@ -246,12 +246,12 @@ class StockMarketAPI
 		
 		$rank = 0;
 		//$tableString = "<table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential(HP/P)</td><td>EarningRate(E/M)</td><td>EPSP(EPS/P)</td><td>EPSGrowthRate</td><td>PEGRatio</td><td>PERatio</td><td>DividendPercentage</td><td>PriceBook</td></tr>";
-		$tableString = "<table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>EarningRate</td></tr>";
+		$tableString = "<table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>Revenue</td><td>EarningRate</td></tr>";
 		
 		while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
 			$rank+=1;
 		    //$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["earningRate"]."%</td><td>".$row["EPSP"]."%</td><td>".$row["EPSGrowthRate"]."</td><td>".$row["PEGRatio"]."</td><td>".$row["PERatio"]."</td><td>".$row["DividendPercentage"]."%</td><td>".$row["PriceBook"]."</td></tr>";
-			$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["earningRate"]."%</td></tr>";
+			$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["revenue"]."</td><td>".$row["earningRate"]."%</td></tr>";
 		}
 		return $tableString . "</table>";
 		
