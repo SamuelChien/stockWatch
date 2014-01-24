@@ -229,7 +229,7 @@ class StockMarketAPI
 		}
 		
 		$whereStatement = "(oneYearHigh/price) > 2 AND oneYearHigh/price > 3 AND";
-		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE((oneYearHigh/price)*100, 2) as potential, TRUNCATE((EBITDAInt/marketCapInt)*100, 2) as earningRate, TRUNCATE(dilutedEPS/price * 100, 2) as EPSP, TRUNCATE((EPSEstimateNextYear/EPSEstimateCurrentYear) *100, 2) as EPSGrowthRate, PEGRatio, PERatio, PastAnnualDividendYieldInPercent as DividendPercentage, PriceBook from quote where " .$whereStatement. " marketCapInt > 500000000 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' ";
+		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE((oneYearHigh/price)*100, 2) as potential, TRUNCATE((EBITDAInt/marketCapInt)*100, 2) as earningRate, TRUNCATE(dilutedEPS/price * 100, 2) as EPSP, TRUNCATE((EPSEstimateNextYear/EPSEstimateCurrentYear) *100, 2) as EPSGrowthRate, PEGRatio, PERatio, PastAnnualDividendYieldInPercent as DividendPercentage, PriceBook from quote where " .$whereStatement. " marketCapInt > 300000000 AND symbol NOT IN ('TWGP', 'DXM', 'SWSH') AND date = '" .Date("Y-m-d") . "' ";
 		
 		if($locationFilter != "")
 		{
