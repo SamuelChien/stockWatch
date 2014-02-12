@@ -231,8 +231,8 @@ class StockMarketAPI
 		}
 		$stockNameFilter = "symbol NOT IN ('WLT', 'WLT.TO')";
 		
-		//QUERY ONE - OPTION QUERY
-		$whereStatement = " where marketCapInt > 300000000 AND (revenueInt/marketCapInt) > 1.5 AND (oneYearHigh/price) > 2.5 AND PriceBook < 1 AND PriceBook > 0 AND (EPSEstimateNextYear-EPSEstimateCurrentYear)/price >= 0 AND date = '" .Date("Y-m-d") . "' ";
+		//QUERY ONE - SAMOO QUERY
+		$whereStatement = " where marketCapInt > 300000000 AND (revenueInt/marketCapInt) > 1.5 AND (oneYearHigh/price) > 3 AND PriceBook < 1 AND PriceBook > 0 AND (EPSEstimateNextYear-EPSEstimateCurrentYear)/price >= 0 AND date = '" .Date("Y-m-d") . "' ";
 		
 		$whereStatement = $whereStatement . "AND " . $stockNameFilter; 
 		
@@ -243,7 +243,7 @@ class StockMarketAPI
 		
 		$groupByStatement = " group by symbol order by (EBITDAInt/marketCapInt) DESC";
 		
-		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE((revenueInt/marketCapInt)*100, 2) as revenuePotential, TRUNCATE((oneYearHigh/price)*100, 2) as potential,TRUNCATE((price/oneYearLow)*100, 2) as lowPotential, TRUNCATE((EPSEstimateNextYear-EPSEstimateCurrentYear)/price*100, 2) as EstimateEPSIncrease, TRUNCATE(EBITDAInt/marketCapInt*100, 2) as cashIncrease,  EBITDA, dilutedEPS, EPSEstimateCurrentYear,  EPSEstimateNextYear, PEGRatio, PERatio, PastAnnualDividendYieldInPercent, PriceBook from quote" .$whereStatement . $groupByStatement;
+		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE(((EBITDAInt/revenueInt * 100)+PastAnnualDividendYieldInPercent)/PriceBook, 2) as buffPotential, TRUNCATE((revenueInt/marketCapInt)*100, 2) as revenuePotential, TRUNCATE((oneYearHigh/price)*100, 2) as potential,TRUNCATE((price/oneYearLow)*100, 2) as lowPotential, TRUNCATE((EPSEstimateNextYear-EPSEstimateCurrentYear)/price*100, 2) as EstimateEPSIncrease, TRUNCATE(EBITDAInt/marketCapInt*100, 2) as cashIncrease,  EBITDA, dilutedEPS, EPSEstimateCurrentYear,  EPSEstimateNextYear, PEGRatio, PERatio, PastAnnualDividendYieldInPercent, PriceBook from quote" .$whereStatement . $groupByStatement;
 		
 		$result = mysql_query( $sql, $this->connection );
 		if (!$result) {
@@ -251,12 +251,70 @@ class StockMarketAPI
 		}
 		
 		$rank = 0;
-		$tableString = $tableString . "<b>Margin Investment (Lowpotential < 105 and potential > 3)</b> <table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>LowPotential</td><td>Revenue</td><td>RevenueCap</td><td>EBITDA</td><td>CashIncrease</td><td>dilutedEPS</td><td>EstimateEPSIncrease</td><td>PriceBook</td><td>PERatio</td><td>PastAnnualDividendYieldInPercent</td><td>PEGRatio</td></tr>";
+		$tableString = $tableString . "<b>Multiple Requirements</b> <table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>LowPotential</td><td>Revenue</td><td>RevenueCap</td><td>EBITDA</td><td>CashIncrease</td><td>dilutedEPS</td><td>EstimateEPSIncrease</td><td>PriceBook</td><td>BuffNumber</td><td>PERatio</td><td>Dividend</td><td>PEGRatio</td></tr>";
 		
 		while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) 
 		{
 			$rank+=1;
-			$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["lowPotential"]."%</td><td>".$row["revenue"]."</td><td>".$row["revenuePotential"]."%</td><td>".$row["EBITDA"]."</td><td>".$row["cashIncrease"]."%</td><td>".$row["dilutedEPS"]."</td><td>".$row["EstimateEPSIncrease"]."%</td><td>".$row["PriceBook"]."</td><td>".$row["PERatio"]."</td><td>".$row["PastAnnualDividendYieldInPercent"]."</td><td>".$row["PEGRatio"]."</td></tr>";
+			$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["lowPotential"]."%</td><td>".$row["revenue"]."</td><td>".$row["revenuePotential"]."%</td><td>".$row["EBITDA"]."</td><td>".$row["cashIncrease"]."%</td><td>".$row["dilutedEPS"]."</td><td>".$row["EstimateEPSIncrease"]."%</td><td>".$row["PriceBook"]."</td><td>".$row["buffPotential"]."</td><td>".$row["PERatio"]."</td><td>".$row["PastAnnualDividendYieldInPercent"]."%</td><td>".$row["PEGRatio"]."</td></tr>";
+		}
+		$tableString = $tableString . "</table>";
+		
+		//QUERY TWO - Buffer Buy QUERY
+		$whereStatement = " where ((EBITDAInt/revenueInt * 100)+PastAnnualDividendYieldInPercent)/PriceBook > 30 AND (oneYearHigh/price) > 2 AND (price/oneYearLow) < 1.1 AND PriceBook > 0 AND revenueInt > 300000000 AND marketCapInt > 800000000 AND date = '" .Date("Y-m-d") . "' ";
+		
+		$whereStatement = $whereStatement . "AND " . $stockNameFilter; 
+		
+		if($locationFilter != "")
+		{
+			$whereStatement = $whereStatement . "AND " . $locationFilter; 
+		}
+		
+		$groupByStatement = " group by symbol order by ((EBITDAInt/revenueInt * 100)+PastAnnualDividendYieldInPercent)/PriceBook DESC";
+		
+		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE(((EBITDAInt/revenueInt * 100)+PastAnnualDividendYieldInPercent)/PriceBook, 2) as buffPotential, TRUNCATE((revenueInt/marketCapInt)*100, 2) as revenuePotential, TRUNCATE((oneYearHigh/price)*100, 2) as potential,TRUNCATE((price/oneYearLow)*100, 2) as lowPotential, TRUNCATE((EPSEstimateNextYear-EPSEstimateCurrentYear)/price*100, 2) as EstimateEPSIncrease, TRUNCATE(EBITDAInt/marketCapInt*100, 2) as cashIncrease,  EBITDA, dilutedEPS, EPSEstimateCurrentYear,  EPSEstimateNextYear, PEGRatio, PERatio, PastAnnualDividendYieldInPercent, PriceBook from quote" .$whereStatement . $groupByStatement;
+		
+		$result = mysql_query( $sql, $this->connection );
+		if (!$result) {
+		    trigger_error('Invalid query: ' . mysql_error());
+		}
+		
+		$rank = 0;
+		$tableString = $tableString . "<b>Buffer Buy Query</b> <table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>LowPotential</td><td>Revenue</td><td>RevenueCap</td><td>EBITDA</td><td>CashIncrease</td><td>dilutedEPS</td><td>EstimateEPSIncrease</td><td>PriceBook</td><td>BuffNumber</td><td>PERatio</td><td>Dividend</td><td>PEGRatio</td></tr>";
+		
+		while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) 
+		{
+			$rank+=1;
+			$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["lowPotential"]."%</td><td>".$row["revenue"]."</td><td>".$row["revenuePotential"]."%</td><td>".$row["EBITDA"]."</td><td>".$row["cashIncrease"]."%</td><td>".$row["dilutedEPS"]."</td><td>".$row["EstimateEPSIncrease"]."%</td><td>".$row["PriceBook"]."</td><td>".$row["buffPotential"]."</td><td>".$row["PERatio"]."</td><td>".$row["PastAnnualDividendYieldInPercent"]."%</td><td>".$row["PEGRatio"]."</td></tr>";
+		}
+		$tableString = $tableString . "</table>";
+		
+		//QUERY THREE - BUFFER SELL QUERY
+		$whereStatement = " where ((EBITDAInt/revenueInt * 100)+PastAnnualDividendYieldInPercent)/PriceBook < 0.5 AND EBITDAInt > 0 AND (oneYearHigh/price) < 1.1 AND (price/oneYearLow) > 3 AND PriceBook > 0 AND revenueInt > 300000000 AND marketCapInt > 1000000000 AND date = '" .Date("Y-m-d") . "' ";
+		
+		$whereStatement = $whereStatement . "AND " . $stockNameFilter; 
+		
+		if($locationFilter != "")
+		{
+			$whereStatement = $whereStatement . "AND " . $locationFilter; 
+		}
+		
+		$groupByStatement = " group by symbol order by ((EBITDAInt/revenueInt * 100)+PastAnnualDividendYieldInPercent)/PriceBook  ";
+		
+		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE(((EBITDAInt/revenueInt * 100)+PastAnnualDividendYieldInPercent)/PriceBook, 2) as buffPotential, TRUNCATE((revenueInt/marketCapInt)*100, 2) as revenuePotential, TRUNCATE((oneYearHigh/price)*100, 2) as potential,TRUNCATE((price/oneYearLow)*100, 2) as lowPotential, TRUNCATE((EPSEstimateNextYear-EPSEstimateCurrentYear)/price*100, 2) as EstimateEPSIncrease, TRUNCATE(EBITDAInt/marketCapInt*100, 2) as cashIncrease,  EBITDA, dilutedEPS, EPSEstimateCurrentYear,  EPSEstimateNextYear, PEGRatio, PERatio, PastAnnualDividendYieldInPercent, PriceBook from quote" .$whereStatement . $groupByStatement;
+		
+		$result = mysql_query( $sql, $this->connection );
+		if (!$result) {
+		    trigger_error('Invalid query: ' . mysql_error());
+		}
+		
+		$rank = 0;
+		$tableString = $tableString . "<b>Buffer Sell Query</b> <table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>LowPotential</td><td>Revenue</td><td>RevenueCap</td><td>EBITDA</td><td>CashIncrease</td><td>dilutedEPS</td><td>EstimateEPSIncrease</td><td>PriceBook</td><td>BuffNumber</td><td>PERatio</td><td>Dividend</td><td>PEGRatio</td></tr>";
+		
+		while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) 
+		{
+			$rank+=1;
+			$tableString = $tableString ."<tr><td>".$rank."</td><td>".$row["symbol"]."</td><td>".$row["name"]."</td><td>$".$row["price"]."</td><td>".$row["change"]."</td><td>".$row["marketCap"].".</td><td>".$row["potential"]."%</td><td>".$row["lowPotential"]."%</td><td>".$row["revenue"]."</td><td>".$row["revenuePotential"]."%</td><td>".$row["EBITDA"]."</td><td>".$row["cashIncrease"]."%</td><td>".$row["dilutedEPS"]."</td><td>".$row["EstimateEPSIncrease"]."%</td><td>".$row["PriceBook"]."</td><td>".$row["buffPotential"]."</td><td>".$row["PERatio"]."</td><td>".$row["PastAnnualDividendYieldInPercent"]."%</td><td>".$row["PEGRatio"]."</td></tr>";
 		}
 		$tableString = $tableString . "</table>";
 		
