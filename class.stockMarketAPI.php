@@ -232,7 +232,7 @@ class StockMarketAPI
 		$stockNameFilter = "symbol NOT IN ('WLT', 'WLT.TO')";
 		
 		//QUERY ONE - OPTION QUERY
-		$whereStatement = " where marketCapInt > 300000000 AND (oneYearHigh/price) > 2.5 AND PriceBook < 1 AND PriceBook > 0 AND (EPSEstimateNextYear-EPSEstimateCurrentYear)/price >= 0 AND date = '" .Date("Y-m-d") . "' ";
+		$whereStatement = " where marketCapInt > 300000000 AND marketCapInt * 1.5 < revenueInt AND (oneYearHigh/price) > 2.5 AND PriceBook < 1 AND PriceBook > 0 AND (EPSEstimateNextYear-EPSEstimateCurrentYear)/price >= 0 AND date = '" .Date("Y-m-d") . "' ";
 		
 		$whereStatement = $whereStatement . "AND " . $stockNameFilter; 
 		
@@ -241,7 +241,7 @@ class StockMarketAPI
 			$whereStatement = $whereStatement . "AND " . $locationFilter; 
 		}
 		
-		$groupByStatement = " group by symbol order by ((EPSEstimateNextYear-EPSEstimateCurrentYear)/price) DESC";
+		$groupByStatement = " group by symbol order by (EBITDAInt/marketCapInt) DESC";
 		
 		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE((oneYearHigh/price)*100, 2) as potential,TRUNCATE((price/oneYearLow)*100, 2) as lowPotential, TRUNCATE((EPSEstimateNextYear-EPSEstimateCurrentYear)/price*100, 2) as EstimateEPSIncrease, TRUNCATE(EBITDAInt/marketCapInt*100, 2) as cashIncrease,  EBITDA, dilutedEPS, EPSEstimateCurrentYear,  EPSEstimateNextYear, PEGRatio, PERatio, PastAnnualDividendYieldInPercent, PriceBook from quote" .$whereStatement . $groupByStatement;
 		
