@@ -186,9 +186,8 @@ class StockMarketAPI
 
 			mysql_select_db('stock');
 			
-			$sql = 'INSERT INTO quote '.'VALUES (CURDATE(), "'.$stock["symbol"].'","'.$stock["name"].'",'.$stock["price"].',"'.$stock["change"].'","'.$stock["marketCap"].'",'.$stock["marketCapInt"].','.$stock["oneYearLow"].','.$stock["oneYearHigh"].',"'.$stock["revenue"].'",'.$stock["revenueInt"].',"'.$stock["EBITDA"].'",'.$stock["EBITDAInt"].','.$stock["open"].','.$stock["previousClose"].','.$stock["dayHigh"].','.$stock["dayLow"].','.$stock["dilutedEPS"].','.$stock["EPSEstimateCurrentYear"].','.$stock["EPSEstimateNextQuarter"].','.$stock["EPSEstimateNextYear"].','.$stock["PERatio"].','.$stock["PEGRatio"].','.$stock["PastAnnualDividendYieldInPercent"].','.$stock["PriceBook"].','.$stock["PriceEPSEstimateCurrentYear"].','.$stock["PriceEPSEstimateNextYear"].','.$stock["PriceSales"].','.$stock["ShortRatio"].','.$stock["SharesOutstanding"].', '.$stock["DailyVolume"].', '.$stock["Volume"].')';
+			$sql = 'INSERT INTO quote '.'VALUES (CURDATE(), "'.$stock["symbol"].'","'.$stock["name"].'",'.$stock["price"].',"'.$stock["change"].'","'.$stock["marketCap"].'",'.$stock["marketCapInt"].','.$stock["oneYearLow"].','.$stock["oneYearHigh"].',"'.$stock["revenue"].'",'.$stock["revenueInt"].',"'.$stock["EBITDA"].'",'.$stock["EBITDAInt"].','.$stock["open"].','.$stock["previousClose"].','.$stock["dayHigh"].','.$stock["dayLow"].','.$stock["dilutedEPS"].','.$stock["EPSEstimateCurrentYear"].','.$stock["EPSEstimateNextQuarter"].','.$stock["EPSEstimateNextYear"].','.$stock["PERatio"].','.$stock["PEGRatio"].','.$stock["PastAnnualDividendYieldInPercent"].','.$stock["PriceBook"].','.$stock["PriceEPSEstimateCurrentYear"].','.$stock["PriceEPSEstimateNextYear"].','.$stock["PriceSales"].','.$stock["ShortRatio"].','.$stock["SharesOutstanding"].')';
 			
-			//echo $sql . "\n";
 			$retval = mysql_query( $sql, $this->connection );
 			if(! $retval )
 			{
@@ -207,7 +206,8 @@ class StockMarketAPI
 		
 		$sql = 'select date from quote order by date DESC';
 		$result = mysql_query( $sql, $this->connection );
-
+		if (mysql_num_rows($result) == 0)
+			return null;
 		return mysql_result($result, 0);
 		
 	}
@@ -251,7 +251,7 @@ class StockMarketAPI
 		}
 		
 		$rank = 0;
-		$tableString = $tableString . "<b>Multiple Requirements</b> <table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>LowPotential</td><td>Revenue</td><td>RevenueCap</td><td>EBITDA</td><td>CashIncrease</td><td>dilutedEPS</td><td>EstimateEPSIncrease</td><td>PriceBook</td><td>BuffNumber</td><td>PERatio</td><td>Dividend</td><td>PEGRatio</td></tr>";
+		$tableString = "<b>Multiple Requirements</b> <table><tr><td>Rank</td><td>Symbol</td><td>Name</td><td>Price</td><td>Change</td><td>MarketCap</td><td>Potential</td><td>LowPotential</td><td>Revenue</td><td>RevenueCap</td><td>EBITDA</td><td>CashIncrease</td><td>dilutedEPS</td><td>EstimateEPSIncrease</td><td>PriceBook</td><td>BuffNumber</td><td>PERatio</td><td>Dividend</td><td>PEGRatio</td></tr>";
 		
 		while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) 
 		{
@@ -338,7 +338,8 @@ class StockMarketAPI
 			$result = mysql_query( $sql, $this->connection );
 		}
 		
-		if($this->_getPreviousDate() != Date("Y-m-d"))
+		$currentDate = $this->_getPreviousDate();
+		if($currentDate == null || $currentDate != Date("Y-m-d"))
 		{
 			$this->InsertDatabase();
 		}
@@ -357,8 +358,7 @@ class StockMarketAPI
 			$count+=1;
 			if($count == 200)
 			{
-				$symbolData = $this->_makeData($symbolSublist);
-				//die(print_r($symbolData));
+				$symbolData = $this->_makeData($symbolSublist);				
 				$this->_databaseInsert($symbolData);
 				$symbolSublist = array();
 				$count = 0;
