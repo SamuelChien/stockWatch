@@ -232,7 +232,7 @@ class StockMarketAPI
 		$stockNameFilter = "symbol NOT IN ('WLT', 'WLT.TO')";
 		
 		//QUERY ONE - SAMOO QUERY
-		$whereStatement = " where PriceBook > 0 AND PriceBook < 1 AND marketCapInt > 100000000 AND (oneYearHigh/price) > 2 AND (price/oneYearLow) < 1.3 AND ((((revenueInt/marketCapInt+EBITDAInt/revenueInt)/2 + dilutedEPS/price + (EPSEstimateNextYear-EPSEstimateCurrentYear)/price)  * 100) + PastAnnualDividendYieldInPercent + marketCapInt/100000000)/PriceBook > 1 AND date = '" .Date("Y-m-d") . "' ";
+		$whereStatement = " where PriceBook > 0 AND marketCapInt > 100000000 AND (oneYearHigh/price) > 2 AND date = '" .Date("Y-m-d") . "' ";
 		   
 		$whereStatement = $whereStatement . "AND " . $stockNameFilter; 
 		
