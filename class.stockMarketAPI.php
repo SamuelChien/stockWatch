@@ -232,8 +232,8 @@ class StockMarketAPI
 		$stockNameFilter = "symbol NOT IN ('WLT', 'WLT.TO')";
 		
 		//QUERY ONE - SAMOO QUERY
-		$whereStatement = " where PriceBook > 0 AND PriceBook < 1 AND marketCapInt > 10000000 AND (oneYearHigh/price) > 2 AND (price/oneYearLow) < 1.3 AND date = '" .Date("Y-m-d") . "' ";
-		
+		$whereStatement = " where PriceBook > 0 AND PriceBook < 1 AND marketCapInt > 100000000 AND (oneYearHigh/price) > 2 AND (price/oneYearLow) < 1.3 AND ((((revenueInt/marketCapInt+EBITDAInt/revenueInt)/2 + dilutedEPS/price + (EPSEstimateNextYear-EPSEstimateCurrentYear)/price)  * 100) + PastAnnualDividendYieldInPercent + marketCapInt/100000000)/PriceBook > 1 AND date = '" .Date("Y-m-d") . "' ";
+		   
 		$whereStatement = $whereStatement . "AND " . $stockNameFilter; 
 		
 		if($locationFilter != "")
@@ -241,9 +241,9 @@ class StockMarketAPI
 			$whereStatement = $whereStatement . "AND " . $locationFilter; 
 		}
 		
-		$groupByStatement = " group by symbol order by ((((revenueInt/marketCapInt+EBITDAInt/revenueInt)/2 + (EPSEstimateNextYear-EPSEstimateCurrentYear)/price)  * 100) + PastAnnualDividendYieldInPercent)/PriceBook/(1000000000/marketCapInt) DESC";
+		$groupByStatement = " group by symbol order by ((((revenueInt/marketCapInt+EBITDAInt/revenueInt)/2 + dilutedEPS/price + (EPSEstimateNextYear-EPSEstimateCurrentYear)/price)  * 100) + PastAnnualDividendYieldInPercent + marketCapInt/100000000)/PriceBook DESC";
 		
-		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE(((((revenueInt/marketCapInt+EBITDAInt/revenueInt)/2 + (EPSEstimateNextYear-EPSEstimateCurrentYear)/price)  * 100) + PastAnnualDividendYieldInPercent)/PriceBook/(1000000000/marketCapInt), 2) as buffPotential, TRUNCATE((revenueInt/marketCapInt)*100, 2) as revenuePotential, TRUNCATE((oneYearHigh/price)*100, 2) as potential,TRUNCATE((price/oneYearLow)*100, 2) as lowPotential, TRUNCATE((EPSEstimateNextYear-EPSEstimateCurrentYear)/price*100, 2) as EstimateEPSIncrease, TRUNCATE(EBITDAInt/marketCapInt*100, 2) as cashIncrease,  EBITDA, dilutedEPS, EPSEstimateCurrentYear,  EPSEstimateNextYear, PEGRatio, PERatio, PastAnnualDividendYieldInPercent, PriceBook from quote" .$whereStatement . $groupByStatement;
+		$sql = "select revenue, symbol, quote.name, price, quote.change, marketCap, TRUNCATE(((((revenueInt/marketCapInt+EBITDAInt/revenueInt)/2 + dilutedEPS/price + (EPSEstimateNextYear-EPSEstimateCurrentYear)/price)  * 100) + PastAnnualDividendYieldInPercent + marketCapInt/100000000)/PriceBook, 2) as buffPotential, TRUNCATE((revenueInt/marketCapInt)*100, 2) as revenuePotential, TRUNCATE((oneYearHigh/price)*100, 2) as potential,TRUNCATE((price/oneYearLow)*100, 2) as lowPotential, TRUNCATE((EPSEstimateNextYear-EPSEstimateCurrentYear)/price*100, 2) as EstimateEPSIncrease, TRUNCATE(EBITDAInt/marketCapInt*100, 2) as cashIncrease,  EBITDA, dilutedEPS, EPSEstimateCurrentYear,  EPSEstimateNextYear, PEGRatio, PERatio, PastAnnualDividendYieldInPercent, PriceBook from quote" .$whereStatement . $groupByStatement;
 		
 		$result = mysql_query( $sql, $this->connection );
 		if (!$result) {
